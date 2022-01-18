@@ -1,0 +1,74 @@
+---
+title: "model_2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+install.packages("pacman")
+library(pacman)
+
+p_load(Rcpp)
+p_load(lmerTest)
+p_load(tidyverse)
+p_load(stargazer)
+p_load(MuMIn)
+```
+
+# Data
+```{r}
+df = read_csv('dat/df_nan_close_2.csv')
+
+df_categorical = df %>%
+  mutate(
+    ch_p = ifelse(Change_policy_overall == 2 | Change_policy_overall == 1, 1, 0),
+    pc_14 = ifelse(party_close_h14 == 1 | party_close_h14 == 2, 0, 1)
+         )
+```
+
+# Models
+```{r}
+m2_0 = lmer(Change_policy_overall ~ party_close_h14 + (1|age) + (1|sex) + (1|edu) + (1|party_combined), data=df)
+m2_1 = lmer(Change_policy_overall ~ party_close_h14 + seem.to.lose + Treatment_polls + (1|age) + (1|sex) + (1|edu) + (1|party_combined), data=df)
+
+m2_3 = lmer(ch_p ~ party_close_h14 + age + sex + edu + (1|party_combined), data=df_categorical)
+m2_4 = lmer(ch_p ~ party_close_h14 + + seem.to.lose + Treatment_polls + age + sex + edu + (1|party_combined), data=df_categorical)
+
+m2_5 = lmer(ch_p ~ party_close_h14 + (1|age) + (1|sex) + (1|edu) + (1|party_combined), data=df_categorical)
+m2_6 = lmer(ch_p ~ party_close_h14 + seem.to.lose + Treatment_polls + (1|age) + (1|sex) + (1|edu) + (1|party_combined), data=df_categorical)
+
+m2_7 = glmer(ch_p ~ party_close_h14 + (1|age) + (1|sex) + (1|edu) + (1|party_combined), data=df_categorical, family="binomial")
+m2_8 = glmer(ch_p ~ party_close_h14 + seem.to.lose + Treatment_polls + (1|age) + (1|sex) + (1|edu) + (1|party_combined), data=df_categorical, family="binomial")
+
+m2_00 =  lmer(Change_policy_overall ~ party_close_h14 + age + sex + edu + (1|party_combined), data=df)
+m2_01 =  lmer(Change_policy_overall ~ party_close_h14 + + seem.to.lose + Treatment_polls + age + sex + edu + (1|party_combined), data=df)
+
+summary(m2_0)
+summary(m2_1)
+
+MuMIn::r.squaredGLMM(m2_0)
+MuMIn::r.squaredGLMM(m2_1)
+```
+
+## reporting model 2
+```{r}
+class(m2_7) <- "lmerMod"
+class(m2_8) <- "lmerMod"
+
+stargazer(m2_7, m2_8)
+```
+
+## random effects table
+```{r}
+toLatex(mtable(m2_0))
+```
+
+```{r}
+# (1|age) + (1|sex) + (1|edu) + (1|party_combined), data=df
+p_load(GLMMadaptive)
+
+fm <- mixed_model(factor(Change_policy_overall) ~ factor(party_close_h14), random = ~ 1 | party_combined, 
+                  data = df, family = binomial())
+```
+
